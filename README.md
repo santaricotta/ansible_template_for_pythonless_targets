@@ -8,7 +8,7 @@ This repository contains 2 playbook templates for you to copy and alter, with ea
     * This playbook brings its own Python to the target host and deletes it at the end of its execution.
 * everything in this README marked with (WIP) is a work in progress and may not even exist yet. 
 
-## prerequisite knowledge and setup
+## prerequisites
 
 ### ansible installation and preparation
 
@@ -61,6 +61,8 @@ You only need to use one of these. The non-raw template takes 5 extra seconds to
     * The first play **Set up Python on pythonless host** only sets up Python. Do not touch this part. 
     * The second play **Ansible tasks to perform on hosts** is where you should add your tasks. You only need to alter the `tasks:` section. 
     * The third play **Remove Python** undoes what the first play did. 
+* In production, replace the `python_url:` value with a copy hosted on your own web server or S3 bucket or face Github's "403 rate limit exceeded".
+    * You can also comment out the 3rd play of this playbook and leave Python on the system for future use. 
 
 ## examples (directory) (WIP)
 
