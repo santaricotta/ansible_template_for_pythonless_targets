@@ -1,0 +1,5 @@
+[fcos_hosts]
+localhost
+
+[fcos_hosts:vars]
+ansible_ssh_port=2222

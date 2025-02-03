@@ -1,0 +1,41 @@
+---
+- name: Playbook for stopping and starting service XYZ on hosts without Python3
+  hosts: all
+  #remote_user: santaricotta # Only needed if your local username differs from the one the remote system expects.
+  become: true
+  become_method: sudo
+  gather_facts: false
+
+  tasks:
+
+## Example 1 - Stopping service XYZ
+    - name: Stop XYZ service
+      raw: sudo systemctl stop XYZ
+      # either adjust the `changed_when` line OR comment out the `register` and `changed_when` lines
+      register: stop_output
+      changed_when: "'XYZ.service' in stop_output.stdout or stop_output.stderr"
+
+## Example 2 - Starting service XYZ
+#
+#    - name: Start XYZ service
+#      raw: sudo systemctl start XYZ
+#      # either adjust the `changed_when` line OR comment out the `register` and `changed_when` lines
+#      register: start_output
+#      changed_when: "'XYZ.service' in start_output.stdout or start_output.stderr"
+
+## Example 3 - stopping zincati updates
+#
+#    - name: Stop zincati service
+#      raw: sudo systemctl stop zincati.service
+#      register: stop_output
+#      changed_when: "'zincati.service' in stop_output.stdout or stop_output.stderr"
+#
+#    - name: Disable zincati service
+#      raw: sudo systemctl disable zincati.service
+#      register: disable_output
+#      changed_when: "'zincati.service' in disable_output.stdout or disable_output.stderr"
+#
+#    - name: Mask zincati service
+#      raw: sudo systemctl mask zincati.service
+#      register: mask_output
+#      changed_when: "'zincati.service' in mask_output.stdout or mask_output.stderr"

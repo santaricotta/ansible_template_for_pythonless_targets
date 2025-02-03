@@ -1,0 +1,11 @@
+plugin: amazon.aws.aws_ec2
+profile: default
+allow_duplicated_hosts: False
+hostnames:
+  - name: "instance-id"
+regions:
+  - eu-west-1
+filters:
+  tag:environment: development 
+compose:
+  ansible_host: private_ip_address

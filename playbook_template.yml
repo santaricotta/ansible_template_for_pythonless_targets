@@ -1,0 +1,152 @@
+---
+###############################################################################
+##### first play; here we use 'raw' module to install python in /root/ ########
+####################### do not alter this play ################################
+###############################################################################
+
+- name: Set up Python on pythonless host
+  hosts: all
+  #remote_user: santaricotta # Only needed if your local username differs from the one the remote system expects.
+  become: true
+  become_user: root
+  become_method: sudo
+  gather_facts: false  # Disable gathering facts because there is no python yet.
+  vars:
+    python_install_dir: "/root/python"
+
+  tasks:
+    - name: Determine architecture using raw module
+      ## This is needed to construct the download URL.
+      ansible.builtin.raw: uname -m
+      register: architecture_output
+      changed_when: false
+
+    - name: Set Python URL based on architecture
+      ansible.builtin.set_fact:
+        ## Hosted on github. In production, replace this with a copy hosted on your own web server or face Github's "403 rate limit exceeded"
+        python_url: "https://github.com/astral-sh/python-build-standalone/releases/download/20250115/cpython-3.13.1+20250115-{{ architecture_output.stdout | trim }}-unknown-linux-gnu-install_only_stripped.tar.gz"
+
+    - name: Download and extract Python if not already installed
+      ## The `|| exit 1` in the if statement below ensures task failure becomes known to ansible
+      ansible.builtin.raw: |
+        if ! [ -f {{ python_install_dir }}/python ]; then
+          mkdir -p {{ python_install_dir }}
+          curl -L {{ python_url }} -o /tmp/python.tar.gz &&
+          tar -xzf /tmp/python.tar.gz -C {{ python_install_dir }} --strip-components=1 &&
+          rm /tmp/python.tar.gz || exit 1
+        fi
+
+###############################################################################
+########### second play; here we can use normal ansible modules ###############
+####################### add your tasks here ###################################
+###############################################################################
+
+- name: Ansible tasks to perform on hosts
+  hosts: all
+  #remote_user: santaricotta # Only needed if your local username differs from the one the remote system expects.
+  become: true
+  become_user: root
+  become_method: sudo
+  gather_facts: true # Enable facts gathering because now there is python present.
+  vars:
+    ansible_python_interpreter: "/root/python/bin/python" # Use python we unpacked in previous play.
+
+  tasks:
+    ###########################################################################
+    ## This is just an example task that ensures a /tmp/hello_world.txt exists on the target system
+    - name: Create a test file
+      ansible.builtin.copy:
+        src: hello_world.txt # taken from ./files directory
+        dest: /tmp/hello_world.txt
+        mode: '0644' # Quotes required here. Prevents ansible from parsing it as an integer.
+
+#    ###########################################################################
+#    ## Ensure Zincati service is stopped, disabled and masked
+#    - name: Stop and disable Zincati service
+#      ansible.builtin.systemd_service:
+#        name: zincati
+#        state: stopped
+#        enabled: false
+#        masked: true
+
+
+#    ###########################################################################
+#    ## Ensure Zincati service is unmasked, enabled, started and reads its (possibly updated) configuration - daemon-reload
+#    - name: Daemon-reload, Start and enable Zincati service
+#      ansible.builtin.systemd_service:
+#        name: zincati
+#        state: started
+#        enabled: true
+#        masked: false
+#        daemon-reload: true
+
+#    ###########################################################################
+#    ## Place a file in /media/data and give it correct permissions and security context
+#    - name: Create parent directory if needed
+#      ansible.builtin.file:
+#        path: /media/data/hello_world_test # full target path
+#        state: directory
+#        mode: '0755'
+#        #owner: 1001  # Using numerals assumes it's a UID, not a numeric username
+#        #group: wheel # Using numerals assumes it's a GID, not a numeric groupname
+#
+#    - name: Place a test file in /media/data/hello_world_test and alter its parameters
+#      ansible.builtin.copy:
+#        src: hello_world.txt # file must exist in ./files/
+#        dest: /media/data/hello_world_test/hello_world.txt
+#        mode: '0644' # Quotes required here. Prevents ansible from parsing it as integer.
+#        #owner: 1001  # Using numerals assumes it's a UID, not a numeric username
+#        #group: wheel # Using numerals assumes it's a GID, not a numeric groupname
+#
+#    - name: Set SELinux context recursively using chcon
+#      ## We can't use community.general.sefcontext, because it requires python selinux
+#      ## bindings on the target and we don't have that in the standalone python interpreter.
+#      ansible.builtin.command: >
+#        chcon -R -u system_u -t mnt_t /media/data/hello_world_test/hello_world.txt
+
+#    ###########################################################################
+#    ## Remove file from a filesystem
+#    - name: Remove a file
+#      ansible.builtin.file:
+#        path: /media/data/hello_world.txt
+#        state: absent
+
+
+#    ###########################################################################
+#    ## Remove multiple files from a filesystem using search with wildcards
+#    - name: Find all .log.gz files in /var/log
+#      ansible.builtin.find:
+#        paths: /var/log # Directory to search
+#        patterns: ['*.log.gz'] # Wildcard style pattern
+#        use_regex: false # We're using simple glob patterns, not regex
+#        recurse: false # Don't search in subdirectories
+#      register: found_files
+#
+#    - name: Remove matched files using a loop
+#      ansible.builtin.file:
+#        path: "{{ item.path }}" # Path of each found file
+#        state: absent
+#      loop: "{{ found_files.files }}" # Loop over the registered results.
+#      loop_control: # Customises loop behaviour, we use it to cosmetically simplify the output.
+#        label: "{{ item.path }}" # Avoids printing full item data
+
+###############################################################################
+##### third play; here we use 'raw' module to remove python from /root/ #######
+####################### do not alter this play ################################
+###############################################################################
+
+- name: Remove Python
+  hosts: all
+  #remote_user: santaricotta # Only needed if your local username differs from the one the remote system expects.
+  become: true
+  become_user: root
+  become_method: sudo
+  gather_facts: false # No need to gather facts for this play
+  vars:
+    python_install_dir: "/root/python"  # This play doesn't have access to variables from the 1st play.
+  tasks:
+    - name: Remove Python installation directory
+      ansible.builtin.raw: |
+        if [ -d {{ python_install_dir }} ]; then
+          rm -rf {{ python_install_dir }}
+        fi
