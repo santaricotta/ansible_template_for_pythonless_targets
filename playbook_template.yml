@@ -27,8 +27,7 @@
     - name: Set Python URL based on architecture
       ansible.builtin.set_fact:
         ## Hosted on github. In production, replace this with a copy hosted on your own web server or face Github's "403 rate limit exceeded"
-        python_url: "https://github.com/astral-sh/python-build-standalone/releases/download/20250115/cpython-3.13.1+20250115-{{ architecture_output.stdout | trim }}-unknown-linux-gnu-install_only_stripped.tar.gz"
-
+        python_url: "https://github.com/astral-sh/python-build-standalone/releases/download/20250317/cpython-3.13.2+20250317-{{ architecture_output.stdout | trim }}-unknown-linux-gnu-install_only_stripped.tar.gz"
     - name: Download and extract Python if not already installed
       ## The `|| exit 1` in the if statement below ensures task failure becomes known to ansible
       ansible.builtin.raw: |
